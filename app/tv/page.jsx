@@ -155,7 +155,6 @@ export default function App() {
     alertTimeoutRef.current = setTimeout(() => { setActiveCall(null); }, 60000);
   };
 
-  // UI 1: 초기 설정 (스크롤 없도록 높이 100vh 고정)
   if (setupMode) {
     return (
       <div style={{ height: '100vh', overflow: 'hidden', backgroundColor: '#000', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '20px', margin: 0, boxSizing: 'border-box' }}>
@@ -186,7 +185,6 @@ export default function App() {
     );
   }
 
-  // UI 2: 팝업 알림 (화면 꽉 차게 덮기)
   if (activeCall) {
     const timeDisplay = activeCall.displayTime || activeCall.timeMode;
     return (
@@ -206,11 +204,11 @@ export default function App() {
     );
   }
 
-  // UI 3: 평시 대기 대시보드 (세로 스크롤 완벽 차단! 가로 3단 꽉 찬 배열)
+  // UI 3: 평시 대기 대시보드 (스크롤 완전 차단 및 시간표 자동 비율 맞춤)
   return (
     <div style={{ height: '100vh', overflow: 'hidden', backgroundColor: '#000', color: '#fff', display: 'flex', flexDirection: 'column', padding: '20px 30px', boxSizing: 'border-box', margin: 0 }}>
       
-      {/* 헤더: 여백과 글자 크기를 살짝 줄임 */}
+      {/* 헤더 */}
       <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', borderBottom: '2px solid #1e293b', paddingBottom: '15px', marginBottom: '20px', flexShrink: 0 }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#3b82f6', marginBottom: '5px', fontWeight: 'bold', fontSize: '20px' }}>
@@ -231,31 +229,33 @@ export default function App() {
         </div>
       </header>
 
-      {/* 메인: 3개의 섹션을 가로로 나란히 배치 ( flex: 1 ) */}
+      {/* 메인 3단 영역 */}
       <main style={{ flex: 1, display: 'flex', gap: '20px', minHeight: 0 }}>
         
-        {/* 좌측: 시간표 */}
-        <section style={{ flex: 1, backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '24px', padding: '24px', display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
-          <h2 style={{ fontSize: '26px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '10px', color: '#4ade80', marginBottom: '20px', borderBottom: '1px solid #1e293b', paddingBottom: '12px', marginTop: 0, flexShrink: 0 }}>
+        {/* 좌측: 시간표 (스크롤 차단 및 내부 박스 flex: 1 적용) */}
+        <section style={{ flex: 1, backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '24px', padding: '24px', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          <h2 style={{ fontSize: '26px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '10px', color: '#4ade80', marginBottom: '16px', borderBottom: '1px solid #1e293b', paddingBottom: '12px', marginTop: 0, flexShrink: 0 }}>
             <CalendarDays size={28} /> 오늘의 시간표
           </h2>
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          {/* 시간표 목록 컨테이너 */}
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px', minHeight: 0 }}>
             {!isNeisError && neisData.timetable.length === 0 && (
               <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b', fontSize: '18px', border: '2px dashed #1e293b', borderRadius: '16px', textAlign: 'center' }}>
                 오늘 등록된<br/>시간표가 없습니다.
               </div>
             )}
             {!isNeisError && neisData.timetable.map((item, idx) => (
-              <div key={idx} style={{ display: 'flex', alignItems: 'center', backgroundColor: '#1e293b', borderRadius: '12px', padding: '14px 20px', flexShrink: 0 }}>
-                <span style={{ fontWeight: 'bold', fontSize: '20px', color: '#64748b', width: '70px' }}>{item.period}교시</span>
-                <span style={{ fontWeight: 'bold', fontSize: '24px', color: '#fff', marginLeft: '12px' }}>{item.subject}</span>
+              // 각 교시 박스: flex: 1을 주어 남은 세로 공간을 균등 분할하여 꽉 채움
+              <div key={idx} style={{ flex: 1, display: 'flex', alignItems: 'center', backgroundColor: '#1e293b', borderRadius: '12px', padding: '0 20px', minHeight: 0 }}>
+                <span style={{ fontWeight: 'bold', fontSize: '20px', color: '#64748b', width: '70px', flexShrink: 0 }}>{item.period}교시</span>
+                <span style={{ fontWeight: 'bold', fontSize: '24px', color: '#fff', marginLeft: '12px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.subject}</span>
               </div>
             ))}
           </div>
         </section>
 
         {/* 중앙: 중식 */}
-        <section style={{ flex: 1, backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '24px', padding: '24px', display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
+        <section style={{ flex: 1, backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '24px', padding: '24px', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
           <h2 style={{ fontSize: '26px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '10px', color: '#fb923c', marginBottom: '20px', borderBottom: '1px solid #1e293b', paddingBottom: '12px', marginTop: 0, flexShrink: 0 }}>
             <Utensils size={28} /> 오늘의 중식
           </h2>
@@ -267,7 +267,7 @@ export default function App() {
         </section>
 
         {/* 우측: 석식 */}
-        <section style={{ flex: 1, backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '24px', padding: '24px', display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
+        <section style={{ flex: 1, backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '24px', padding: '24px', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
           <h2 style={{ fontSize: '26px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '10px', color: '#c084fc', marginBottom: '20px', borderBottom: '1px solid #1e293b', paddingBottom: '12px', marginTop: 0, flexShrink: 0 }}>
             <Utensils size={28} /> 오늘의 석식
           </h2>
