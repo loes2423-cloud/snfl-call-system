@@ -52,28 +52,20 @@ export default function App() {
       }
     };
     initAuth();
-
     const unsubscribe = onAuthStateChanged(auth, setUser);
     return () => unsubscribe();
   }, []);
 
   useEffect(() => {
     const clockTimer = setInterval(() => setCurrentTime(new Date()), 1000);
-    const reloadTimer = setInterval(() => {
-      window.location.reload();
-    }, 60 * 60 * 1000);
-    
-    return () => {
-      clearInterval(clockTimer);
-      clearInterval(reloadTimer);
-    };
+    const reloadTimer = setInterval(() => { window.location.reload(); }, 60 * 60 * 1000);
+    return () => { clearInterval(clockTimer); clearInterval(reloadTimer); };
   }, []);
 
   const fetchNeisData = async (grade, classNum) => {
     try {
       const today = new Date();
       const dateStr = `${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}`;
-      
       const officeCode = 'J10'; 
       const schoolCode = '7530762'; 
       const neisApiKey = '5e97c3556ad84223b6fba69e9a887d24';
@@ -93,7 +85,6 @@ export default function App() {
             .replace(/,\s*,/g, ',') 
             .replace(/^[,\s]+|[,\s]+\$/g, '') 
             .trim();
-
           if (meal.MMEAL_SC_CODE === '2') lunch = cleanMenu;
           if (meal.MMEAL_SC_CODE === '3') dinner = cleanMenu;
         });
@@ -115,11 +106,7 @@ export default function App() {
     } catch (err) {
       console.error('NEIS API 연동 에러:', err);
       setIsNeisError(true);
-      setNeisData({ 
-        lunch: '급식 정보를 불러올 수 없습니다.', 
-        dinner: '급식 정보를 불러올 수 없습니다.', 
-        timetable: [] 
-      });
+      setNeisData({ lunch: '정보 없음', dinner: '정보 없음', timetable: [] });
     }
   };
 
@@ -135,13 +122,11 @@ export default function App() {
 
   useEffect(() => {
     if (!isReady || !user) return;
-
     const callsCollection = collection(db, 'artifacts', appId, 'public', 'data', 'school_calls');
     const q = query(callsCollection);
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const allCalls = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      
       const myCalls = allCalls.filter(call => 
         String(call.grade) === String(config.grade) && 
         String(call.classNum) === String(config.classNum) &&
@@ -150,7 +135,6 @@ export default function App() {
 
       if (myCalls.length > 0) {
         const latestCall = myCalls.sort((a, b) => b.timestamp - a.timestamp)[0];
-        
         if (lastPlayedCallRef.current !== latestCall.timestamp) {
           triggerAlert(latestCall);
         }
@@ -163,57 +147,38 @@ export default function App() {
   const triggerAlert = (callData) => {
     setActiveCall(callData);
     lastPlayedCallRef.current = callData.timestamp; 
-
     if (audioRef.current) {
       audioRef.current.currentTime = 0;
       audioRef.current.play().catch(e => console.error("Audio play failed:", e));
     }
-
-    if (alertTimeoutRef.current) {
-      clearTimeout(alertTimeoutRef.current);
-    }
-
-    alertTimeoutRef.current = setTimeout(() => {
-      setActiveCall(null);
-    }, 60000);
+    if (alertTimeoutRef.current) clearTimeout(alertTimeoutRef.current);
+    alertTimeoutRef.current = setTimeout(() => { setActiveCall(null); }, 60000);
   };
 
-  // UI 1: 초기 설정 화면 (구형 브라우저 강제 스타일 적용)
+  // UI 1: 초기 설정 (스크롤 없도록 높이 100vh 고정)
   if (setupMode) {
     return (
-      <div style={{ minHeight: '100vh', backgroundColor: '#000', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '20px', margin: 0 }}>
+      <div style={{ height: '100vh', overflow: 'hidden', backgroundColor: '#000', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '20px', margin: 0, boxSizing: 'border-box' }}>
         <div style={{ backgroundColor: '#0f172a', border: '1px solid #334155', padding: '40px', borderRadius: '24px', textAlign: 'center', width: '100%', maxWidth: '600px' }}>
-          <Monitor color="#3b82f6" size={80} style={{ margin: '0 auto 20px auto' }} />
-          <h2 style={{ fontSize: '32px', fontWeight: 'bold', color: '#fff', marginBottom: '16px' }}>성남외고 스마트 TV 수신기</h2>
-          <p style={{ color: '#94a3b8', fontSize: '18px', marginBottom: '40px' }}>학년과 반을 선택하고 수신 대기를 시작해주세요.</p>
+          <Monitor color="#3b82f6" size={70} style={{ margin: '0 auto 15px auto' }} />
+          <h2 style={{ fontSize: '28px', fontWeight: 'bold', color: '#fff', marginBottom: '16px' }}>성남외고 스마트 TV 수신기</h2>
           
-          <div style={{ display: 'flex', gap: '24px', justifyContent: 'center', marginBottom: '40px' }}>
+          <div style={{ display: 'flex', gap: '20px', justifyContent: 'center', marginBottom: '30px', marginTop: '30px' }}>
             <div style={{ display: 'flex', flexDirection: 'column' }}>
               <label style={{ color: '#94a3b8', fontSize: '14px', fontWeight: 'bold', marginBottom: '8px' }}>학년</label>
-              <select 
-                value={config.grade} 
-                onChange={(e) => setConfig({...config, grade: e.target.value})}
-                style={{ backgroundColor: '#1e293b', color: '#fff', fontSize: '24px', fontWeight: 'bold', padding: '16px 20px', borderRadius: '12px', border: '1px solid #334155', textAlign: 'center' }}
-              >
+              <select value={config.grade} onChange={(e) => setConfig({...config, grade: e.target.value})} style={{ backgroundColor: '#1e293b', color: '#fff', fontSize: '22px', fontWeight: 'bold', padding: '14px 20px', borderRadius: '12px', border: '1px solid #334155', textAlign: 'center' }}>
                 {[1,2,3].map(n => <option key={n} value={n}>{n}학년</option>)}
               </select>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column' }}>
               <label style={{ color: '#94a3b8', fontSize: '14px', fontWeight: 'bold', marginBottom: '8px' }}>반</label>
-              <select 
-                value={config.classNum} 
-                onChange={(e) => setConfig({...config, classNum: e.target.value})}
-                style={{ backgroundColor: '#1e293b', color: '#fff', fontSize: '24px', fontWeight: 'bold', padding: '16px 20px', borderRadius: '12px', border: '1px solid #334155', textAlign: 'center' }}
-              >
+              <select value={config.classNum} onChange={(e) => setConfig({...config, classNum: e.target.value})} style={{ backgroundColor: '#1e293b', color: '#fff', fontSize: '22px', fontWeight: 'bold', padding: '14px 20px', borderRadius: '12px', border: '1px solid #334155', textAlign: 'center' }}>
                 {[...Array(8)].map((_, i) => <option key={i+1} value={i+1}>{i+1}반</option>)}
               </select>
             </div>
           </div>
 
-          <button 
-            onClick={startListening}
-            style={{ width: '100%', padding: '24px', backgroundColor: '#2563eb', color: '#fff', fontSize: '28px', fontWeight: 'bold', borderRadius: '16px', border: 'none', cursor: 'pointer' }}
-          >
+          <button onClick={startListening} style={{ width: '100%', padding: '20px', backgroundColor: '#2563eb', color: '#fff', fontSize: '24px', fontWeight: 'bold', borderRadius: '16px', border: 'none', cursor: 'pointer' }}>
             수신 대기 시작
           </button>
         </div>
@@ -221,103 +186,102 @@ export default function App() {
     );
   }
 
-  // UI 2: 호출 팝업 (구형 브라우저 강제 스타일 적용)
+  // UI 2: 팝업 알림 (화면 꽉 차게 덮기)
   if (activeCall) {
     const timeDisplay = activeCall.displayTime || activeCall.timeMode;
     return (
       <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999, backgroundColor: '#facc15', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-        <div style={{ backgroundColor: '#000', padding: '60px', borderRadius: '40px', textAlign: 'center', border: '16px solid #eab308', width: '100%', maxWidth: '1000px', display: 'flex', flexDirection: 'column', gap: '40px' }}>
-          <AlertCircle color="#eab308" size={100} style={{ margin: '0 auto' }} />
-          
-          <h1 style={{ fontSize: '100px', fontWeight: 'bold', color: '#facc15', margin: 0, lineHeight: '1.2' }}>
-            {activeCall.studentName} <span style={{ color: '#fff', fontSize: '70px' }}>학생!</span>
+        <div style={{ backgroundColor: '#000', padding: '50px', borderRadius: '40px', textAlign: 'center', border: '16px solid #eab308', width: '100%', maxWidth: '900px', display: 'flex', flexDirection: 'column', gap: '30px' }}>
+          <AlertCircle color="#eab308" size={80} style={{ margin: '0 auto' }} />
+          <h1 style={{ fontSize: '80px', fontWeight: 'bold', color: '#facc15', margin: 0, lineHeight: '1.2' }}>
+            {activeCall.studentName} <span style={{ color: '#fff', fontSize: '60px' }}>학생!</span>
           </h1>
-          
-          <div style={{ fontSize: '50px', fontWeight: 'bold', color: '#fff', lineHeight: '1.6', marginTop: '20px' }}>
+          <div style={{ fontSize: '40px', fontWeight: 'bold', color: '#fff', lineHeight: '1.6', marginTop: '20px' }}>
             <p style={{ margin: '0 0 20px 0' }}><span style={{ color: '#60a5fa', borderBottom: '6px solid #60a5fa', paddingBottom: '10px' }}>{timeDisplay}</span></p>
             <p style={{ margin: '0 0 20px 0' }}><span style={{ color: '#f87171' }}>{activeCall.office}</span>의</p>
-            <p style={{ margin: 0 }}><span style={{ color: '#4ade80', fontSize: '70px' }}>{activeCall.teacherName} 선생님</span>을 찾아가세요.</p>
+            <p style={{ margin: 0 }}><span style={{ color: '#4ade80', fontSize: '60px' }}>{activeCall.teacherName} 선생님</span>을 찾아가세요.</p>
           </div>
         </div>
       </div>
     );
   }
 
-  // UI 3: 대시보드 (최신 Grid 대신 구형도 지원하는 Flex 레이아웃으로 변경)
+  // UI 3: 평시 대기 대시보드 (세로 스크롤 완벽 차단! 가로 3단 꽉 찬 배열)
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#000', color: '#fff', display: 'flex', flexDirection: 'column', padding: '40px', boxSizing: 'border-box', margin: 0 }}>
+    <div style={{ height: '100vh', overflow: 'hidden', backgroundColor: '#000', color: '#fff', display: 'flex', flexDirection: 'column', padding: '20px 30px', boxSizing: 'border-box', margin: 0 }}>
       
-      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', borderBottom: '2px solid #1e293b', paddingBottom: '20px', marginBottom: '30px' }}>
+      {/* 헤더: 여백과 글자 크기를 살짝 줄임 */}
+      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', borderBottom: '2px solid #1e293b', paddingBottom: '15px', marginBottom: '20px', flexShrink: 0 }}>
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', color: '#3b82f6', marginBottom: '8px', fontWeight: 'bold', fontSize: '24px' }}>
-            <School size={28} /> 성남외국어고등학교
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#3b82f6', marginBottom: '5px', fontWeight: 'bold', fontSize: '20px' }}>
+            <School size={24} /> 성남외국어고등학교
           </div>
-          <h1 style={{ fontSize: '70px', fontWeight: 'bold', margin: 0 }}>
+          <h1 style={{ fontSize: '50px', fontWeight: 'bold', margin: 0 }}>
             {config.grade}학년 {config.classNum}반
           </h1>
         </div>
         <div style={{ textAlign: 'right' }}>
-          <div style={{ fontSize: '24px', color: '#94a3b8', marginBottom: '10px' }}>
+          <div style={{ fontSize: '20px', color: '#94a3b8', marginBottom: '5px' }}>
             {currentTime.toLocaleDateString('ko-KR', { month: 'long', day: 'numeric', weekday: 'long' })}
           </div>
-          <div style={{ fontSize: '80px', fontWeight: 'bold', color: '#dbeafe', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', margin: 0 }}>
-            <Clock size={60} color="#3b82f6" style={{ marginRight: '20px' }} />
+          <div style={{ fontSize: '60px', fontWeight: 'bold', color: '#dbeafe', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', margin: 0, lineHeight: 1 }}>
+            <Clock size={45} color="#3b82f6" style={{ marginRight: '15px' }} />
             {currentTime.toLocaleTimeString('ko-KR', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })}
           </div>
         </div>
       </header>
 
-      <main style={{ flex: 1, display: 'flex', gap: '30px' }}>
-        {/* 좌측: 시간표 (폭 35%) */}
-        <section style={{ width: '35%', backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '32px', padding: '30px', display: 'flex', flexDirection: 'column' }}>
-          <h2 style={{ fontSize: '32px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '12px', color: '#4ade80', marginBottom: '24px', borderBottom: '1px solid #1e293b', paddingBottom: '16px', marginTop: 0 }}>
-            <CalendarDays size={32} /> 오늘의 시간표
+      {/* 메인: 3개의 섹션을 가로로 나란히 배치 ( flex: 1 ) */}
+      <main style={{ flex: 1, display: 'flex', gap: '20px', minHeight: 0 }}>
+        
+        {/* 좌측: 시간표 */}
+        <section style={{ flex: 1, backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '24px', padding: '24px', display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
+          <h2 style={{ fontSize: '26px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '10px', color: '#4ade80', marginBottom: '20px', borderBottom: '1px solid #1e293b', paddingBottom: '12px', marginTop: 0, flexShrink: 0 }}>
+            <CalendarDays size={28} /> 오늘의 시간표
           </h2>
-          
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {isNeisError && <p style={{ color: '#f87171' }}>데이터를 불러오지 못했습니다.</p>}
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '10px' }}>
             {!isNeisError && neisData.timetable.length === 0 && (
-              <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b', fontSize: '20px', border: '2px dashed #1e293b', borderRadius: '16px' }}>
-                오늘 등록된 시간표가 없습니다.
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b', fontSize: '18px', border: '2px dashed #1e293b', borderRadius: '16px', textAlign: 'center' }}>
+                오늘 등록된<br/>시간표가 없습니다.
               </div>
             )}
             {!isNeisError && neisData.timetable.map((item, idx) => (
-              <div key={idx} style={{ display: 'flex', alignItems: 'center', backgroundColor: '#1e293b', borderRadius: '16px', padding: '20px 24px' }}>
-                <span style={{ fontWeight: 'bold', fontSize: '24px', color: '#64748b', width: '80px' }}>{item.period}교시</span>
-                <span style={{ fontWeight: 'bold', fontSize: '28px', color: '#fff', marginLeft: '16px' }}>{item.subject}</span>
+              <div key={idx} style={{ display: 'flex', alignItems: 'center', backgroundColor: '#1e293b', borderRadius: '12px', padding: '14px 20px', flexShrink: 0 }}>
+                <span style={{ fontWeight: 'bold', fontSize: '20px', color: '#64748b', width: '70px' }}>{item.period}교시</span>
+                <span style={{ fontWeight: 'bold', fontSize: '24px', color: '#fff', marginLeft: '12px' }}>{item.subject}</span>
               </div>
             ))}
           </div>
         </section>
 
-        {/* 우측: 급식 (폭 65%) */}
-        <section style={{ width: '65%', display: 'flex', flexDirection: 'column', gap: '30px' }}>
-          <div style={{ flex: 1, backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '32px', padding: '40px', display: 'flex', flexDirection: 'column' }}>
-            <h2 style={{ fontSize: '32px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '12px', color: '#fb923c', marginBottom: '20px', borderBottom: '1px solid #1e293b', paddingBottom: '16px', marginTop: 0 }}>
-              <Utensils size={32} /> 오늘의 중식
-            </h2>
-            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <p style={{ fontSize: '42px', fontWeight: '500', color: '#e2e8f0', textAlign: 'center', lineHeight: '1.6', margin: 0 }}>
-                {neisData.lunch}
-              </p>
-            </div>
-          </div>
-
-          <div style={{ flex: 1, backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '32px', padding: '40px', display: 'flex', flexDirection: 'column' }}>
-            <h2 style={{ fontSize: '32px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '12px', color: '#c084fc', marginBottom: '20px', borderBottom: '1px solid #1e293b', paddingBottom: '16px', marginTop: 0 }}>
-              <Utensils size={32} /> 오늘의 석식
-            </h2>
-            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <p style={{ fontSize: '42px', fontWeight: '500', color: '#e2e8f0', textAlign: 'center', lineHeight: '1.6', margin: 0 }}>
-                {neisData.dinner}
-              </p>
-            </div>
+        {/* 중앙: 중식 */}
+        <section style={{ flex: 1, backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '24px', padding: '24px', display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
+          <h2 style={{ fontSize: '26px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '10px', color: '#fb923c', marginBottom: '20px', borderBottom: '1px solid #1e293b', paddingBottom: '12px', marginTop: 0, flexShrink: 0 }}>
+            <Utensils size={28} /> 오늘의 중식
+          </h2>
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <p style={{ fontSize: '28px', fontWeight: '500', color: '#e2e8f0', textAlign: 'center', lineHeight: '1.6', margin: 0 }}>
+              {neisData.lunch}
+            </p>
           </div>
         </section>
+
+        {/* 우측: 석식 */}
+        <section style={{ flex: 1, backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '24px', padding: '24px', display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
+          <h2 style={{ fontSize: '26px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '10px', color: '#c084fc', marginBottom: '20px', borderBottom: '1px solid #1e293b', paddingBottom: '12px', marginTop: 0, flexShrink: 0 }}>
+            <Utensils size={28} /> 오늘의 석식
+          </h2>
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <p style={{ fontSize: '28px', fontWeight: '500', color: '#e2e8f0', textAlign: 'center', lineHeight: '1.6', margin: 0 }}>
+              {neisData.dinner}
+            </p>
+          </div>
+        </section>
+
       </main>
 
-      <footer style={{ marginTop: '30px', color: '#475569', fontSize: '20px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-        <span style={{ width: '16px', height: '16px', backgroundColor: '#22c55e', borderRadius: '50%' }}></span>
+      <footer style={{ marginTop: '15px', color: '#475569', fontSize: '16px', display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
+        <span style={{ width: '12px', height: '12px', backgroundColor: '#22c55e', borderRadius: '50%' }}></span>
         교무실 호출 수신 대기 중...
       </footer>
     </div>
